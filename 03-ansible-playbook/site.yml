@@ -1,0 +1,65 @@
+---
+- name: Server Provisioning Playbook
+  hosts: local
+  become: yes
+
+  vars:
+    username: devops_user
+    packages:
+      - nginx
+      - curl
+      - git
+      - ufw
+
+  tasks:
+
+    - name: Update apt package cache
+      apt:
+        update_cache: yes
+
+    - name: Install required packages
+      apt:
+        name: "{{ packages }}"
+        state: present
+
+    - name: Create devops user
+      user:
+        name: "{{ username }}"
+        shell: /bin/bash
+        create_home: yes
+        state: present
+
+    - name: Start and enable nginx
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+
+    - name: Allow SSH through firewall
+      ufw:
+        rule: allow
+        port: "22"
+        proto: tcp
+
+    - name: Allow HTTP through firewall
+      ufw:
+        rule: allow
+        port: "80"
+        proto: tcp
+
+    - name: Enable firewall
+      ufw:
+        state: enabled
+        policy: deny
+
+
+    - name: Deploy index page
+      copy:
+        dest: /var/www/html/index.html
+        content: |
+          <html>
+            <body>
+              <h1>Provisioned by Ansible</h1>
+              <p>Deployed on {{ ansible_date_time.date }}</p>
+            </body>
+          </html>
